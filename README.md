@@ -15,8 +15,8 @@ config_path\
 
 Once copied, restart HA and then you can added integratiuons for each BK300.\
 You need to supply the BK300 MAC address - get it using the "BKMonitor" App on a phone.\
-The defauly poll interval is 5000ms. If you change it then you will have to restart HA.
+The default poll interval is 5000ms. If you change it then you will have to restart HA.
 
-If you add more than one BK300, Google adding drift alerts using Home Assistant template automation, stacking voltage traves, summing the voltages and adding alerts to the total voltage.
+If you add more than one BK300, Google adding drift alerts using Home Assistant template automation, stacking voltage curves, summing the voltages and adding alerts to the total voltage etc.
 
 Please share the code back if you modify anything.
