@@ -1,6 +1,8 @@
 # Home-Assistant-BK300
 Home Assistant (HA) Integration for a Konnwei BK300 Battery Monitor
 
+This integration only retrieves voltages. SOC and Temperature do not seem to be available.
+
 The files need to reside in this directory structure on the HA Server:
 
 config_path\
