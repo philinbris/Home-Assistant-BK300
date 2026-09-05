@@ -4,9 +4,9 @@ Home Assistant (HA) Integration for a Konnwei BK300 Battery Monitor
 The files need to reside in this directory structure on the HA Server:
 
 config_path\
-.....custom_components\
-........bk300_monitor\
-............manifest.json
+  custom_components\
+    bk300_monitor\
+      manifest.json
 ............__init__.py
 ............config_flow.py
 ............sensor.py
