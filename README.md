@@ -9,7 +9,7 @@ config_path\
 --custom_components\
 ----bk300_monitor\
 ------manifest.json\
-------\__init\__.py\
+------\_\_init\_\_.py\
 ------config_flow.py\
 ------sensor.py
 
