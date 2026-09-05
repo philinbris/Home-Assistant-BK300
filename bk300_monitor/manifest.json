@@ -1,0 +1,10 @@
+{
+  "domain": "bk300_monitor",
+  "name": "Battery Monitor BK300",
+  "codeowners": ["@philinbris"],
+  "config_flow": true,
+  "documentation": "https://github.com/philinbris/Home-Assistant-BK300",
+  "iot_class": "local_polling",
+  "requirements": ["bleak>=0.21.1"],
+  "version": "1.0.0"
+}
