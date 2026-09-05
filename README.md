@@ -9,7 +9,7 @@ config_path\
 ------manifest.json\
 ------__init__.py\
 ------config_flow.py\
-------sensor.py\
+------sensor.py
 
 Once copied, restart HA and then you can added integratiuons for each BK300.
 You need to supply the BK300 MAC address - get it using the App oin a phone.
