@@ -35,25 +35,46 @@ def build_request_packet(interval_ms: int) -> bytes:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the sensor platform mapping from config details."""
-    config = hass.data[DOMAIN][entry.entry_id]
-    mac = config["mac_address"]
-    interval = config["interval_ms"]
+    config = entry.data
+    options = entry.options
     
-    sensor = BK300VoltageSensor(mac, interval)
+    mac = config["mac_address"]
+    # Fallback to initial config if options flow hasn't been saved yet
+    interval = options.get("interval_ms", config.get("interval_ms", 5000))
+    zero_offset = options.get("zero_offset", config.get("zero_offset", 0.0))
+    span_multiplier = options.get("span_multiplier", config.get("span_multiplier", 1.0))
+    
+    sensor = BK300VoltageSensor(mac, interval, zero_offset, span_multiplier)
     async_add_entities([sensor])
     
-    # Launch execution asynchronously so it runs concurrently without locking the main thread
+    # Listen for changes coming from the runtime Options Flow UI
+    async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Handle updating runtime parameters without needing a reload."""
+        _LOGGER.info("Updating calibration configurations dynamically for %s", mac)
+        sensor.update_calibration(
+            interval_ms=entry.options.get("interval_ms", sensor._interval),
+            zero_offset=entry.options.get("zero_offset", sensor._zero_offset),
+            span_multiplier=entry.options.get("span_multiplier", sensor._span_multiplier)
+        )
+
+    # Bind the listener to this config entry
+    entry.async_on_unload(entry.add_update_listener(async_update_listener))
+    
+    # Launch background task execution
     entry.async_create_background_task(hass, sensor.run_client_loop(), f"bk300_loop_{mac}")
 
 class BK300VoltageSensor(SensorEntity):
     """Representation of a BK300 Battery Monitor Voltage Sensor."""
 
-    def __init__(self, mac_address: str, interval_ms: int) -> None:
+    def __init__(self, mac_address: str, interval_ms: int, zero_offset: float, span_multiplier: float) -> None:
         self._mac = mac_address
         self._interval = interval_ms
+        self._zero_offset = zero_offset
+        self._span_multiplier = span_multiplier
         self._state = None
         self._received_confirmation = False
         self._is_running = True
+        self._rebuild_packet_required = False
         
         # Entity structural definitions
         self._attr_name = f"BK300 Battery Voltage {mac_address.upper()}"
@@ -66,6 +87,16 @@ class BK300VoltageSensor(SensorEntity):
     def native_value(self):
         """Return the state of the sensor."""
         return self._state
+
+    def update_calibration(self, interval_ms: int, zero_offset: float, span_multiplier: float) -> None:
+        """Update runtime calibration filters immediately from Options Flow."""
+        self._zero_offset = zero_offset
+        self._span_multiplier = span_multiplier
+        
+        if self._interval != interval_ms:
+            self._interval = interval_ms
+            # Flag that the packet needs to be recreated in the client loop
+            self._rebuild_packet_required = True
 
     def notification_handler(self, sender: int, data: bytearray):
         """Process incoming raw telemetry bytes natively."""
@@ -80,12 +111,18 @@ class BK300VoltageSensor(SensorEntity):
                 if chunk == b"$$" or chunk == b"\r\n":
                     continue
                 raw_val = int.from_bytes(chunk, byteorder='little')
-                self._state = round(raw_val / 100.0, 2)
+                sensor_voltage = raw_val / 100.0
+                
+                # Apply runtime linear calibration adjustments 
+                adjusted_voltage = (sensor_voltage + self._zero_offset) * self._span_multiplier
+                
+                self._state = round(adjusted_voltage, 2)
                 self.async_write_ha_state()
 
     async def run_client_loop(self):
         """Asynchronous reconnection loop for the Bluetooth client."""
         request_packet = build_request_packet(self._interval)
+        self._rebuild_packet_required = False
         
         while self._is_running:
             try:
@@ -98,6 +135,12 @@ class BK300VoltageSensor(SensorEntity):
                         
                         # Keep alive while connection remains valid
                         while client.is_connected and self._is_running:
+                            # If interval config was changed, push the new packet to Bleak
+                            if self._rebuild_packet_required:
+                                request_packet = build_request_packet(self._interval)
+                                await client.write_gatt_char(WRITE_UUID, request_packet, response=False)
+                                self._rebuild_packet_required = False
+                                
                             await asyncio.sleep(1)
             except Exception as err:
                 _LOGGER.error("Bluetooth connection error on device %s: %s", self._mac, err)

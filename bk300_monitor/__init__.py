@@ -1,22 +1,19 @@
-import asyncio
+"""The BK300 Battery Monitor integration."""
+import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.const import Platform
 
-DOMAIN = "bk300_monitor"
-PLATFORMS = ["sensor"]
+_LOGGER = logging.getLogger(__name__)
+PLATFORMS = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up BK300 Battery Monitor from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-    # Store entry options inside the global space for the sensor platform to inherit
-    hass.data[DOMAIN][entry.entry_id] = entry.data
-    
+    # Forward the setup to the sensor platform (sensor.py)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return True
+    # This ensures sensors disconnect cleanly if you delete a module instance
+    return await hass.config_entries.async_unload_entry_platforms(entry, PLATFORMS)

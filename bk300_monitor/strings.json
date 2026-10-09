@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure BK300 Battery Monitor",
+        "data": {
+          "mac_address": "Bluetooth MAC Address",
+          "interval_ms": "Polling Interval (ms)",
+          "zero_offset": "Zero Offset Calibration (V)",
+          "span_multiplier": "Span Multiplier Calibration (Gain)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This battery monitor device is already integrated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Calibration Parameters",
+        "data": {
+          "interval_ms": "Polling Interval (ms)",
+          "zero_offset": "Zero Offset Calibration (V)",
+          "span_multiplier": "Span Multiplier Calibration (Gain)"
+        }
+      }
+    }
+  }
+}
